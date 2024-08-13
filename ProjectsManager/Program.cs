@@ -14,22 +14,24 @@ namespace ProjectsManager
     {
         static void Main(string[] args)
         {
+            // Initialize an instance of the Methods class, presumably for utility functions
             Methods methods = new Methods();
-
+            // Configure application settings using a ConfigurationBuilder
             var builder = new ConfigurationBuilder()
                               .SetBasePath(AppContext.BaseDirectory) // Use AppContext.BaseDirectory for consistent path resolution
                               .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-            // 2. Configuración específica del entorno (opcional)
+            // Check for an environment-specific configuration file (e.g., appsettings.Development.json)
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             if (!string.IsNullOrEmpty(environment))
             {
                 builder.AddJsonFile($"appsettings.{environment}.json", optional: true);
             }
-
+            // Build the final configuration
             IConfiguration configuration = builder.Build();
 
-            // Creamos el directorio "logs" en la raíz del proyecto si no existe
+            // Set up logging using Serilog
+            // Create a "logs" directory if it doesn't exist
             var logsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "logs");
             if (!Directory.Exists(logsDirectory))
             {
@@ -63,6 +65,7 @@ namespace ProjectsManager
 
             string configFilePath = Path.Combine(projectRootPath, "appsettings.json"); // Construct the full path to appsettings.json
 
+            // Deserialize configuration data from appsettings\.json
             using (StreamReader reader = new StreamReader(configFilePath))
             {
                 string json = reader.ReadToEnd();
@@ -72,16 +75,16 @@ namespace ProjectsManager
                 Console.WriteLine($"GitHub Account: {rootPathAndFolders.GitConfig.Account}");
                 Console.WriteLine($"GitHub Email: {rootPathAndFolders.GitConfig.Email}");
             }
-
+            // Initialize lists for repositories
             List<Repos> RepoList = new();
             List<Repos> OrganizationRepoList = new();
-
+            // Set command executable paths
             string CmdExecutable = "cmd.exe";
             string GitHubExecutable = "gh.exe";
 
             string GitHubExecutableDirectory = @"C:\Program Files\GitHub CLI\";
             string CmdExecutableDirectory = @"C:\Windows\System32\";
-
+            // Construct GitHub command lines
             string GitHubRepoCommandLine = $"repo list {rootPathAndFolders.GitConfig.Account} --json name,description,visibility --limit 100";
             string GitHubOrganizationList = "org list";
             
@@ -97,11 +100,12 @@ namespace ProjectsManager
          
             try
             {
+                // Obtain repository information using the Methods class
                 RepoList = methods.ObtainRepositoriesNames(GitHubExecutable, GitHubRepoCommandLine, GitHubExecutableDirectory);
 
-                // Elimina los saltos de línea usando una expresión regular
+                // Get organization information and clean up the result
                 string Result = Regex.Replace(methods.ExcecuteProcces(GitHubExecutable, GitHubOrganizationList, GitHubExecutableDirectory), @"\r\n?|\n", "");
-
+                // If organizations exist, get their repository information
                 AccountOrganization.Add(Result);
                 if (AccountOrganization.Count() != 0) 
                 {
@@ -162,7 +166,7 @@ namespace ProjectsManager
                 Console.WriteLine(ex.ToString());
                 Log.Error(ex, "Error:");
             }
-            
+            // Clone or sync personal repositories
             try
             {
                 Console.WriteLine("Cloning or syncing Personal GitHub repositories...");
@@ -212,7 +216,7 @@ namespace ProjectsManager
                 Console.WriteLine(ex.ToString());
                 Log.Error(ex, "Error:");
             }
-            //OrganizationRepo
+            // Clone or sync organization repositories
             try
             {
                 Console.WriteLine("Cloning or syncing Customer or Teams GitHub repositories...");
